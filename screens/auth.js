@@ -30,11 +30,16 @@ export default function Auth({navigation}) {
   const handleSubmit = () => {
     console.log(username);
     console.log(password);
-    if(username !== password) {
-      // if username and password didn't match
-      showToast("Username dan Password tidak cocok !");
+    if(username === "" || password === "") {
+      // if username or password is empty
+      showToast("Username atau Password tidak boleh kosong !");
     } else {
-      navigation.navigate('Main');
+      if(username !== password) {
+        // if username and password didn't match
+        showToast("Username dan Password tidak cocok !");
+      } else {
+        navigation.navigate('Main');
+      }
     }
   }
 
