@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, AsyncStorage } from 'react-native';
 
 // image attribution <a href='https://www.freepik.com/vectors/school'>School vector created by katemangostar - www.freepik.com</a>
 
@@ -21,9 +21,10 @@ const MoveToBottom = (component) => {
   )
 }
 
-const Main = () => {
+const Main = ({ navigation }) => {
   const [isPresent, doPresent] = useState(false);
   const [label, setLabel] = useState('Kamu Belum Presensi');
+  const [user, setUser] = useState({});
 
   let icon = !isPresent ?
               require('../assets/main/before.png') :
@@ -38,6 +39,23 @@ const Main = () => {
       setLabel('Kamu Sudah Hadir');
     }
   }
+
+  useEffect(() => {
+    console.log('Do something from main!');
+    //username, present, location
+    if(!user) {
+      AsyncStorage.getItem('user', (error, result) => {
+        if(result) {
+          const parseResult = JSON.parse(result);
+          setUser(parseResult);
+        } else {
+          console.log(error);
+          navigation.goBack();
+        }
+      });
+    }
+
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -54,7 +72,7 @@ const Main = () => {
       {
         MoveToBottom(
           // <Button onPress={() => console.log('halo')} title="Submit" />
-          <SubmitButton title="PRESENSI" onPress={handleSubmit} size="sm" backgroundColor="#007bff"/>
+          <SubmitButton title="PRESENSI" onPress={handleSubmit} size="sm" backgroundColor="#252525"/>
         )
       }
     </View>

@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import { StyleSheet, TextInput, View, ToastAndroid, Text, TouchableOpacity } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import { StyleSheet, TextInput, View, ToastAndroid, Text, TouchableOpacity, AsyncStorage } from 'react-native';
 
 TouchableOpacity.defaultProps = { activeOpacity: 0.8 };
 
@@ -28,8 +28,6 @@ export default function Auth({navigation}) {
   const [password, setPassword] = useState('');
 
   const handleSubmit = () => {
-    console.log(username);
-    console.log(password);
     if(username === "" || password === "") {
       // if username or password is empty
       showToast("Username atau Password tidak boleh kosong !");
@@ -38,10 +36,35 @@ export default function Auth({navigation}) {
         // if username and password didn't match
         showToast("Username dan Password tidak cocok !");
       } else {
+        const user = {
+          username,
+          present: false,
+          location: false
+        };
+
+        AsyncStorage.setItem('user', JSON.stringify(user));
+        console.log(user);
+
         navigation.navigate('Main');
       }
     }
   }
+
+  useEffect(() => {
+    console.log('Do something from auth!');
+    
+    //username, present, location
+    AsyncStorage.getItem('user', (error, result) => {
+      if(result) {
+        console.log('Nah jalan');
+        console.log(result);
+        navigation.navigate('Main');
+      } else {
+        console.log(error);
+      }
+    });
+
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -66,7 +89,6 @@ export default function Auth({navigation}) {
 
       {
         MoveToBottom(
-          // <Button onPress={() => console.log('halo')} title="Submit" />
           <SubmitButton title="Submit" onPress={handleSubmit} size="sm" backgroundColor="#007bff"/>
         )
       }
