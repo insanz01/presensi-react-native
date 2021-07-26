@@ -1,6 +1,11 @@
 import React, {useState, useEffect} from 'react';
 import { StyleSheet, TextInput, View, ToastAndroid, Text, TouchableOpacity, AsyncStorage } from 'react-native';
 
+import * as Device from 'expo-device';
+import * as Application from 'expo-application';
+
+// import DeviceInfo from 'react-native-device-info';
+
 TouchableOpacity.defaultProps = { activeOpacity: 0.8 };
 
 const SubmitButton = ({onPress, title}) => {
@@ -23,48 +28,73 @@ const showToast = (message) => {
   ToastAndroid.show(message, ToastAndroid.LONG);
 };
 
-export default function Auth({navigation}) {
+export default function Auth({handleScreen}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = () => {
+  const authenticate = async (data) => {
+    let postHeader = new Headers();
+
+    // postHeader.append(
+    //   'Authorization', 'Bearer [YOUR TOKEN HERE]'
+    // );
+    postHeader.append('Content-Type', 'application/json');
+
+    try {
+      const response =  await fetch('http://192.168.43.235/presensi-cerdas/api/login', {
+        method: 'POST',
+        headers: postHeader,
+        body: JSON.stringify(data)
+      });
+  
+      const json = await response.json();
+      console.log(json.message)
+
+      return true;
+    } catch(error) {
+      console.error(error);
+
+      return false;
+    }
+
+  }
+
+  const handleSubmit = async () => {
     if(username === "" || password === "") {
       // if username or password is empty
       showToast("Username atau Password tidak boleh kosong !");
     } else {
-      if(username !== password) {
+      if(username === password) {
         // if username and password didn't match
         showToast("Username dan Password tidak cocok !");
       } else {
-        const user = {
+        // DeviceInfo.getUniqueId().then((uniqueId) => setDeviceID(uniqueID));
+        // DeviceInfo.getManufacturer().then((manufactur) => setManufacturer(manufactur));
+        const manufacturer = Device.manufacturer;
+        const deviceID = Application.androidId;
+
+        const loginData = {
           username,
-          present: false,
-          location: false
-        };
+          password
+        }
 
-        AsyncStorage.setItem('user', JSON.stringify(user));
-        console.log(user);
-
-        navigation.navigate('Main');
+        if (await authenticate(loginData)) {
+          const user = {
+            deviceID,
+            username,
+            present: false,
+            location: {},
+            manufacturer
+          };
+  
+          AsyncStorage.setItem('user', JSON.stringify(user));
+          // console.log(user);
+  
+          handleScreen(true);
+        }
       }
     }
   }
-
-  useEffect(() => {
-    console.log('Do something from auth!');
-    
-    //username, present, location
-    AsyncStorage.getItem('user', (error, result) => {
-      if(result) {
-        console.log('Nah jalan');
-        console.log(result);
-        navigation.navigate('Main');
-      } else {
-        console.log(error);
-      }
-    });
-
-  }, []);
 
   return (
     <View style={styles.container}>

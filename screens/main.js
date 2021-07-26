@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, AsyncStorage } from 'react-native';
 
+import * as Location from 'expo-location';
+
 // image attribution <a href='https://www.freepik.com/vectors/school'>School vector created by katemangostar - www.freepik.com</a>
 
 TouchableOpacity.defaultProps = { activeOpacity: 0.8 };
@@ -21,16 +23,27 @@ const MoveToBottom = (component) => {
   )
 }
 
-const Main = ({ navigation }) => {
+const Main = ({route, navigation}) => {
+  const [isLoaded, setLoaded] = useState(false);
   const [isPresent, doPresent] = useState(false);
   const [label, setLabel] = useState('Kamu Belum Presensi');
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState({
+    deviceID: '',
+    username: '',
+    present: false,
+    location: {},
+    manufacturer: ''
+  });
 
   let icon = !isPresent ?
               require('../assets/main/before.png') :
               require('../assets/main/after.png');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if(Object.keys(user.location).length == 0) {
+      getLocation()
+    }
+
     if(isPresent) {
       doPresent(false);
       setLabel('Kamu Belum Presensi');
@@ -40,22 +53,63 @@ const Main = ({ navigation }) => {
     }
   }
 
+  const getLocation = () => {
+    // get location
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.error('Permission to access location was denied');
+        return;
+      }
+
+      let loc = await Location.getCurrentPositionAsync({});
+
+      setUser({...user, location: loc});
+    })();
+  }
+
   useEffect(() => {
-    console.log('Do something from main!');
-    //username, present, location
-    if(!user) {
+    if(!isLoaded) {
       AsyncStorage.getItem('user', (error, result) => {
         if(result) {
-          const parseResult = JSON.parse(result);
-          setUser(parseResult);
+          data = JSON.parse(result);
+          console.log(data);
+          setUser({
+            deviceID: data.deviceID,
+            username: data.username,
+            present: data.present,
+            location: data.location,
+            manufacturer: data.manufacturer
+          });
+          setLoaded(true);
+
         } else {
-          console.log(error);
-          navigation.goBack();
+          console.error('Data tidak dapat dimuat');
         }
       });
     }
+    
+    if(isPresent) {
+      console.log(user)
+      navigation.navigate('Scanner');
+    }
 
-  }, []);
+  }, [user]);
+
+  // just for debugging
+  const backToNature = () => {
+    const user = {
+      username: '',
+      present: false,
+      location: ''
+    };
+
+    setUser(user);
+
+    AsyncStorage.removeItem('user');
+
+    route.params?.handleScreen(false);
+  }
 
   return (
     <View style={styles.container}>
@@ -71,7 +125,12 @@ const Main = ({ navigation }) => {
 
       {
         MoveToBottom(
-          // <Button onPress={() => console.log('halo')} title="Submit" />
+          <SubmitButton title="KEMBALI" onPress={backToNature} size="sm" backgroundColor="#252525"/>
+        )
+      }
+
+      {
+        MoveToBottom(
           <SubmitButton title="PRESENSI" onPress={handleSubmit} size="sm" backgroundColor="#252525"/>
         )
       }
